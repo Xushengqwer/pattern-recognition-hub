@@ -1,1 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模式识别 (Pattern Recognition) 深度学习工作台 V2.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .math-block { overflow-x: auto; padding: 0.5rem 0; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
+  <!-- 顶部栏 -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <span class="bg-indigo-600 text-xs font-bold px-2.5 py-1 rounded">V2.0 精读版</span>
+        <h1 class="text-lg font-bold">模式识别 · 交互式课程精读笔记</h1>
+      </div>
+      <div class="text-xs text-slate-400">
+        模块化架构：支持按章节持续迭代扩充
+      </div>
+    </div>
+  </header>
+
+  <!-- 主体：左侧章节导航 + 右侧深度学习区 -->
+  <div class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    <!-- 左侧：课程章节目录树 -->
+    <aside class="lg:col-span-1 space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sticky top-20">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 px-2">📚 课程章节导航</h2>
+        <nav id="chapter-nav" class="space-y-1.5">
+          <!-- 由JS根据 courseChapters 自动渲染 -->
+        </nav>
+
+        <div class="mt-6 pt-4 border-t border-slate-100 px-2">
+          <div class="text-xs font-semibold text-slate-600 mb-1">💡 迭代说明</div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            绿色标记章节已完成深度梳理。想学下一章时，告诉 AI 即可生成对应章节模块！
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 右侧：当前章节深度精读区 -->
+    <main id="chapter-content" class="lg:col-span-3 space-y-6">
+      <!-- 由JS动态渲染当前选中的章节内容 -->
+    </main>
+
+  </div>
+
+  <!-- ==================== 模块化知识库与引擎 ==================== -->
+  <script>
+    /**
+     * 【核心架构设计】：
+     * 所有的课程内容都封装在 courseChapters 数组里。
+     * 以后我们要梳理第3章、第4章，只需要往这个数组里追加对象，或者替换对应章节即可！
+     */
+    const courseChapters = [
+      {
+        id: "ch1",
+        title: "第1章：绪论与全局大纲",
+        status: "ready",
+        badge: "全局视野",
+        render: () => `
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <h2 class="text-2xl font-bold text-slate-800">第1章：模式识别全局知识图谱</h2>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              模式识别的核心任务是把样本特征向量 $x = [x_1, x_2, \\dots, x_d]^T$ 映射到类别空间 $\\omega \\in \\{\\omega_1, \\dots, \\omega_c\\}$（分类）或划分为若干簇（聚类）。
+            </p>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-sm space-y-2">
+              <div class="font-bold text-indigo-950">🧭 整门课的演进主线（复习抓手）：</div>
+              <ol class="list-decimal list-inside space-y-1.5 text-indigo-900 text-xs leading-relaxed">
+                <li><strong>理想情况（第2章 贝叶斯决策）</strong>：假设先验 $P(\\omega_i)$ 和类条件概率密度 $p(x|\\omega_i)$ 完全已知，直接算后验概率做最优决策。</li>
+                <li><strong>估计概率分布（第3章 概率密度估计）</strong>：现实中 $p(x|\\omega_i)$ 未知，知其形状用<strong>参数估计(MLE/贝叶斯)</strong>；不知形状用<strong>非参数估计(Parzen窗/KNN)</strong>。</li>
+                <li><strong>直接画分界线（第4~5章 线性与非线性分类器）</strong>：跳过概率估计，直接求超平面（Fisher、感知机、SVM）或非线性边界（核函数、MLP、决策树）。</li>
+                <li><strong>嫌维度太高？（第6章 特征选择与提取）</strong>：分类前先降维，用 <strong>PCA</strong>（无监督保方差）或 <strong>LDA</strong>（有监督促分类）。</li>
+                <li><strong>连标签都没有？（第7章 聚类分析）</strong>：用 <strong>K-Means、ISODATA、层次聚类</strong> 自动分簇。</li>
+              </ol>
+            </div>
+            <div class="pt-2">
+              <button onclick="selectChapter('ch2')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition shadow-sm">
+                👉 进入【第2章：贝叶斯决策理论】深度精读
+              </button>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "ch2",
+        title: "第2章：贝叶斯决策理论",
+        status: "ready",
+        badge: "已深度梳理",
+        render: () => `
+          <!-- 1. 核心概念与三大准则 -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+            <div class="border-b pb-4">
+              <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">第二章 · 核心必考模块</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-2">贝叶斯决策理论 (Bayesian Decision Theory)</h2>
+              <p class="text-sm text-slate-500 mt-1">统计模式识别的基石：在概率分布已知的前提下，如何做出理论上最优的分类决策？</p>
+            </div>
+
+            <!-- 四个概率名词解释 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="text-sm font-bold text-indigo-900 mb-1">1. 先验概率 $P(\\omega_i)$ 与 类条件概率密度 $p(x|\\omega_i)$</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  • <strong>先验概率 $P(\\omega_i)$</strong>：不看样本特征 $x$，仅凭经验知道某类出现的概率（如人群中患病的比例）。满足 $\\sum_{i=1}^c P(\\omega_i) = 1$。<br>
+                  • <strong>类条件密度 $p(x|\\omega_i)$</strong>：已知属于 $\\omega_i$ 类时，特征 $x$ 的分布情况（如患病者体温的概率分布）。
+                </p>
+              </div>
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="text-sm font-bold text-indigo-900 mb-1">2. 后验概率 $P(\\omega_i|x)$ 与 贝叶斯公式</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  观测到样本特征 $x$ 后，它属于 $\\omega_i$ 类的概率：
+                  $$P(\\omega_i|x) = \\frac{p(x|\\omega_i)P(\\omega_i)}{p(x)} = \\frac{p(x|\\omega_i)P(\\omega_i)}{\\sum_{j=1}^c p(x|\\omega_j)P(\\omega_j)}$$
+                </p>
+              </div>
+            </div>
+
+            <!-- 两大决策准则对比表 -->
+            <div>
+              <h3 class="text-base font-bold text-slate-800 mb-3">🔥 考点一：最小错误率准则 vs 最小风险准则</h3>
+              <div class="overflow-x-auto border rounded-xl">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-700 border-b">
+                      <th class="p-3 font-bold">对比维度</th>
+                      <th class="p-3 font-bold text-indigo-700">1. 最小错误率贝叶斯决策</th>
+                      <th class="p-3 font-bold text-amber-700">2. 最小风险贝叶斯决策</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y">
+                    <tr>
+                      <td class="p-3 font-semibold bg-slate-50">适用场景</td>
+                      <td class="p-3">所有错判后果一样严重（如普通手写数字识别）</td>
+                      <td class="p-3">不同错判代价不同（如：把癌症漏诊为健康 vs 把健康误诊为癌症）</td>
+                    </tr>
+                    <tr>
+                      <td class="p-3 font-semibold bg-slate-50">核心计算量</td>
+                      <td class="p-3">计算<strong>后验概率</strong> $P(\\omega_i|x)$</td>
+                      <td class="p-3">引入损失矩阵 $\\lambda_{ij}$（真实为 $\\omega_j$ 却采取行动 $\\alpha_i$ 的代价），计算<strong>条件风险</strong>：<br>$$R(\\alpha_i|x) = \\sum_{j=1}^c \\lambda_{ij} P(\\omega_j|x)$$</td>
+                    </tr>
+                    <tr>
+                      <td class="p-3 font-semibold bg-slate-50">决策规则</td>
+                      <td class="p-3">选后验概率<strong>最大</strong>的类：<br>$P(\\omega_i|x) > P(\\omega_j|x) \\implies x \\in \\omega_i$</td>
+                      <td class="p-3">选条件风险<strong>最小</strong>的行动：<br>$R(\\alpha_i|x) < R(\\alpha_j|x) \\implies \\text{采取 } \\alpha_i$</td>
+                    </tr>
+                    <tr>
+                      <td class="p-3 font-semibold bg-slate-50">两者关系</td>
+                      <td colspan="2" class="p-3 text-emerald-700 font-medium">
+                        当采用“0-1损失函数”（判对损失为0，判错损失全为1）时，条件风险 $R(\\alpha_i|x) = 1 - P(\\omega_i|x)$，<strong>最小风险决策完全退化为最小错误率决策！</strong>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 交互式仿真实验室：一维高斯贝叶斯决策与错误率阴影 -->
+          <div class="bg-slate-900 text-white rounded-2xl shadow-md p-6 space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-700 pb-3">
+              <div>
+                <span class="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded font-semibold">章节专属交互实验</span>
+                <h3 class="text-lg font-bold mt-1">🎛️ 贝叶斯决策边界与最小错误率 $P(e)$ 实时仿真</h3>
+              </div>
+              <div class="text-xs text-slate-300">
+                拖动下方滑块，观察后验分子曲线 $p(x|\\omega_i)P(\\omega_i)$ 的交点（决策阈值）与阴影面积（错误率）的变化！
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+              <div class="lg:col-span-2 bg-slate-950 rounded-xl p-2 border border-slate-800">
+                <canvas id="bayes-canvas" width="600" height="320" class="w-full h-auto"></canvas>
+              </div>
+
+              <!-- 参数调节面板 -->
+              <div class="space-y-4 bg-slate-800/70 p-4 rounded-xl text-xs">
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <span class="text-rose-400 font-bold">🔴 类别 $\\omega_1$ 先验概率 $P(\\omega_1)$:</span>
+                    <span id="val-pw1" class="font-mono font-bold">0.50</span>
+                  </div>
+                  <input type="range" id="slider-pw1" min="0.1" max="0.9" step="0.05" value="0.5" class="w-full" oninput="updateBayesPlot()">
+                  <div class="text-[11px] text-slate-400 mt-0.5">注：$P(\\omega_2) = 1 - P(\\omega_1) = $ <span id="val-pw2">0.50</span></div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <span class="text-sky-400 font-bold">🔵 类别 $\\omega_2$ 均值 $\\mu_2$ (拉开两类距离):</span>
+                    <span id="val-mu2" class="font-mono font-bold">1.5</span>
+                  </div>
+                  <input type="range" id="slider-mu2" min="0.0" max="3.5" step="0.1" value="1.5" class="w-full" oninput="updateBayesPlot()">
+                </div>
+
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <span class="text-sky-400 font-bold">🔵 类别 $\\omega_2$ 标准差 $\\sigma_2$ (改变方差):</span>
+                    <span id="val-sig2" class="font-mono font-bold">1.0</span>
+                  </div>
+                  <input type="range" id="slider-sig2" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full" oninput="updateBayesPlot()">
+                </div>
+
+                <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 space-y-1.5">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">当前理論最小错误率 $P(e)$:</span>
+                    <span id="val-pe" class="font-bold text-amber-400 text-sm">0.00%</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 leading-normal">
+                    💡 <strong>直观理解公式</strong>：<br>
+                    $P(e) = \\int_{-\\infty}^{\\infty} \\min[P(\\omega_1)p(x|\\omega_1), P(\\omega_2)p(x|\\omega_2)] dx$<br>
+                    即图中两曲线下方<strong>重叠部分（琥珀色阴影）</strong>的面积！当 $\\sigma_1 \\neq \\sigma_2$ 时，你会看到出现<strong>两个决策阈值交点</strong>（二次分类器）！
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 正态分布下的判别函数推导 (重中之重) -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <h3 class="text-base font-bold text-slate-800">📐 考点二：正态分布下的判别函数与三种决策面推导（期末必考大题）</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              设 $d$ 维特征向量服从多元正态分布 $p(x|\\omega_i) = \\frac{1}{(2\\pi)^{d/2}|\\Sigma_i|^{1/2}} \\exp\\left[-\\frac{1}{2}(x-\\mu_i)^T\\Sigma_i^{-1}(x-\\mu_i)\\right]$，取对数后构造判别函数：
+            </p>
+            <div class="bg-slate-50 p-4 rounded-xl border text-center math-block">
+              $$g_i(x) = \\ln p(x|\\omega_i) + \\ln P(\\omega_i) = -\\frac{1}{2}(x-\\mu_i)^T\\Sigma_i^{-1}(x-\\mu_i) - \\frac{d}{2}\\ln 2\\pi - \\frac{1}{2}\\ln|\\Sigma_i| + \\ln P(\\omega_i)$$
+            </div>
+            <p class="text-xs text-slate-500">去掉与类别 $i$ 无关的常数项 $-\\frac{d}{2}\\ln 2\\pi$，根据协方差矩阵 $\\Sigma_i$ 的不同，分为以下三种经典情况：</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div class="border rounded-xl p-4 bg-indigo-50/30 space-y-2">
+                <div class="font-bold text-sm text-indigo-900">情况 1：$\\Sigma_i = \\sigma^2 I$</div>
+                <div class="text-xs text-slate-600">各维特征独立且方差相同（球状分布）。展开二次项消去 $x^Tx$ 后，判别函数简化为线性函数：</div>
+                <div class="text-xs bg-white p-2 rounded border">
+                  $$g_i(x) = w_i^T x + w_{i0}$$
+                  其中 $w_i = \\frac{\\mu_i}{\\sigma^2}$
+                </div>
+                <div class="text-xs text-emerald-700 font-medium">
+                  ✅ 结论：决策面为<strong>超平面</strong>。若先验相等，退化为<strong>最小欧氏距离分类器</strong>。
+                </div>
+              </div>
+
+              <div class="border rounded-xl p-4 bg-indigo-50/30 space-y-2">
+                <div class="font-bold text-sm text-indigo-900">情况 2：$\\Sigma_i = \\Sigma$</div>
+                <div class="text-xs text-slate-600">各类协方差矩阵相同但任意（形状相同的超椭球）。二次项 $x^T\\Sigma^{-1}x$ 与类别无关可消去：</div>
+                <div class="text-xs bg-white p-2 rounded border">
+                  $$g_i(x) = w_i^T x + w_{i0}$$
+                  其中 $w_i = \\Sigma^{-1}\\mu_i$
+                </div>
+                <div class="text-xs text-emerald-700 font-medium">
+                  ✅ 结论：决策面依然是<strong>超平面（线性分类器）</strong>。若先验相等，退化为<strong>最小马氏距离分类器</strong>。
+                </div>
+              </div>
+
+              <div class="border rounded-xl p-4 bg-indigo-50/30 space-y-2">
+                <div class="font-bold text-sm text-indigo-900">情况 3：$\\Sigma_i$ 各不相同</div>
+                <div class="text-xs text-slate-600">二次项无法消去，必须保留完整的二次型：</div>
+                <div class="text-xs bg-white p-2 rounded border">
+                  $$g_i(x) = x^T W_i x + w_i^T x + w_{i0}$$
+                  其中 $W_i = -\\frac{1}{2}\\Sigma_i^{-1}$
+                </div>
+                <div class="text-xs text-amber-700 font-medium">
+                  ✅ 结论：决策面为<strong>超二次曲面</strong>（抛物面、双曲面等），属于二次分类器（可以在上面仿真器把 $\\sigma_2$ 调大观察两个交点！）。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. 期末经典真题演练 (带折叠解析) -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <h3 class="text-base font-bold text-slate-800">✍️ 考点三：期末真题实战演练</h3>
+            <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-4 text-xs space-y-2 leading-relaxed">
+              <div class="font-bold text-amber-900 text-sm">【例题】两类一维正态分布贝叶斯分类与最小风险计算</div>
+              <p>
+                已知两类模式 $\\omega_1, \\omega_2$ 的先验概率相等 $P(\\omega_1) = P(\\omega_2) = 0.5$，类条件概率密度服从一维正态分布：$p(x|\\omega_1) \\sim N(0, 1)$，$p(x|\\omega_2) \\sim N(2, 1)$。<br>
+                (1) 求<strong>最小错误率贝叶斯决策</strong>的决策边界 $x^*$；<br>
+                (2) 若引入损失矩阵 $\\lambda_{11}=0, \\lambda_{22}=0, \\lambda_{12}=1, \\lambda_{21}=3$（即把 $\\omega_1$ 错判为 $\\omega_2$ 的代价是 3，反之代价是 1），求<strong>最小风险贝叶斯决策</strong>的新决策边界 $x^*$，并说明边界向哪边移动了？为什么？
+              </p>
+            </div>
+
+            <button onclick="document.getElementById('sol-ch2-1').classList.toggle('hidden')" class="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition">
+              👀 点击展开/隐藏详细分步解答
+            </button>
+
+            <div id="sol-ch2-1" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-3 leading-relaxed">
+              <div>
+                <strong class="text-indigo-900">解 (1) 最小错误率决策边界：</strong><br>
+                因为两类方差相等 $\\sigma_1^2 = \\sigma_2^2 = 1$，且先验概率相等 $P(\\omega_1)=P(\\omega_2)=0.5$，最小错误率决策等价于最小欧氏距离分类器。<br>
+                令 $p(x|\\omega_1)P(\\omega_1) = p(x|\\omega_2)P(\\omega_2)$，即：
+                $$\\frac{1}{\\sqrt{2\\pi}}\\exp\\left(-\\frac{x^2}{2}\\right) = \\frac{1}{\\sqrt{2\\pi}}\\exp\\left(-\\frac{(x-2)^2}{2}\\right)$$
+                两边取对数得：$x^2 = (x-2)^2 \\implies 4x = 4 \\implies x^* = 1$。<br>
+                <strong>判决规则</strong>：当 $x < 1$ 时判为 $\\omega_1$；当 $x > 1$ 时判为 $\\omega_2$。
+              </div>
+              <div class="border-t pt-2">
+                <strong class="text-indigo-900">解 (2) 最小风险决策边界：</strong><br>
+                根据最小风险似然比准则，判为 $\\omega_1$ 的条件是 $R(\\alpha_1|x) < R(\\alpha_2|x)$，展开为似然比公式：
+                $$\\frac{p(x|\\omega_1)}{p(x|\\omega_2)} > \\frac{\\lambda_{12} - \\lambda_{22}}{\\lambda_{21} - \\lambda_{11}} \\cdot \\frac{P(\\omega_2)}{P(\\omega_1)} = \\frac{1 - 0}{3 - 0} \\cdot \\frac{0.5}{0.5} = \\frac{1}{3}$$
+                代入正态密度函数并两边取自然对数 $\\ln$：
+                $$-\\frac{x^2}{2} - \\left[-\\frac{(x-2)^2}{2}\\right] > \\ln\\left(\\frac{1}{3}\\right) \\implies 2 - 2x > -\\ln 3 \\implies x < 1 + \\frac{1}{2}\\ln 3 \\approx 1.55$$
+                <strong>结论与物理意义</strong>：新的决策阈值 $x^* \\approx 1.55$，相比原来的 $x^*=1$ <strong>向右（向 $\\omega_2$ 中心）移动了</strong>！因为把 $\\omega_1$ 错判为 $\\omega_2$ 的代价（$\\lambda_{21}=3$）更大，所以系统宁可扩大 $\\omega_1$ 的判决领地，以保护 $\\omega_1$ 不被轻易漏判。
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: "ch3",
+        title: "第3章：概率密度函数的估计",
+        status: "todo",
+        badge: "待梳理",
+        render: () => renderPlaceholder("第3章：概率密度函数的估计（MLE、贝叶斯估计、Parzen窗、KNN）")
+      },
+      {
+        id: "ch4",
+        title: "第4章：线性分类器与SVM",
+        status: "todo",
+        badge: "待梳理",
+        render: () => renderPlaceholder("第4章：线性判别函数（Fisher、感知机、MSE、支持向量机SVM）")
+      },
+      {
+        id: "ch5",
+        title: "第5章：非线性分类与集成学习",
+        status: "todo",
+        badge: "待梳理",
+        render: () => renderPlaceholder("第5章：核函数、多层感知机MLP、决策树、Bagging与AdaBoost")
+      },
+      {
+        id: "ch6",
+        title: "第6章：特征选择与提取 (PCA/LDA)",
+        status: "todo",
+        badge: "待梳理",
+        render: () => renderPlaceholder("第6章：可分性判据、搜索算法、PCA (K-L变换) 与 LDA 降维")
+      },
+      {
+        id: "ch7",
+        title: "第7章：非监督学习与聚类分析",
+        status: "todo",
+        badge: "待梳理",
+        render: () => renderPlaceholder("第7章：距离度量、K-Means、ISODATA、层次聚类与GMM")
+      }
+    ];
+
+    function renderPlaceholder(chapterName) {
+      return `
+        <div class="bg-white rounded-2xl shadow-sm border border-dashed border-slate-300 p-12 text-center space-y-4">
+          <div class="text-4xl">🚧</div>
+          <h3 class="text-lg font-bold text-slate-800">${chapterName}</h3>
+          <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+            该章节处于“待深度梳理”状态。当你学完第2章后，只需要在聊天框里对我说：<br>
+            <strong class="text-indigo-600">“我们开始梳理第3章，帮我把第3章的精讲、公式推导和交互实验加进网页里”</strong>，我就会为你点亮这一章！
+          </p>
+        </div>
+      `;
+    }
+
+    let currentChapterId = "ch2"; // 默认直接打开第2章展示效果
+
+    function renderNav() {
+      const nav = document.getElementById('chapter-nav');
+      nav.innerHTML = courseChapters.map(ch => {
+        const isActive = ch.id === currentChapterId;
+        const isReady = ch.status === 'ready';
+        return `
+          <button onclick="selectChapter('${ch.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between transition ${
+            isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'
+          }">
+            <span class="truncate pr-2">${ch.title}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full shrink-0 ${
+              isActive ? 'bg-indigo-800 text-indigo-100' : (isReady ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400')
+            }">${ch.badge}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectChapter(id) {
+      currentChapterId = id;
+      renderNav();
+      const ch = courseChapters.find(c => c.id === id);
+      const container = document.getElementById('chapter-content');
+      container.innerHTML = ch.render();
+
+      if (window.renderMathInElement) {
+        renderMathInElement(container, {
+          delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}]
+        });
+      }
+
+      if (id === 'ch2') {
+        setTimeout(updateBayesPlot, 50);
+      }
+    }
+
+    // ==================== 第2章专属交互仿真：一维高斯贝叶斯决策 ====================
+    function gaussian(x, mu, sig) {
+      return (1 / (Math.sqrt(2 * Math.PI) * sig)) * Math.exp(-0.5 * ((x - mu) / sig) ** 2);
+    }
+
+    function updateBayesPlot() {
+      const canvas = document.getElementById('bayes-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const pw1 = parseFloat(document.getElementById('slider-pw1').value);
+      const pw2 = 1 - pw1;
+      const mu1 = -1.0, sig1 = 1.0; // 固定类别1在 x = -1, sigma = 1
+      const mu2 = parseFloat(document.getElementById('slider-mu2').value);
+      const sig2 = parseFloat(document.getElementById('slider-sig2').value);
+
+      document.getElementById('val-pw1').innerText = pw1.toFixed(2);
+      document.getElementById('val-pw2').innerText = pw2.toFixed(2);
+      document.getElementById('val-mu2').innerText = mu2.toFixed(1);
+      document.getElementById('val-sig2').innerText = sig2.toFixed(1);
+
+      // 坐标映射: x in [-4.5, 6.0], y in [0, 0.45]
+      const xMin = -4.5, xMax = 6.0;
+      const yMax = 0.42;
+      const toX = x => ((x - xMin) / (xMax - xMin)) * (W - 60) + 30;
+      const toY = y => H - 35 - (y / yMax) * (H - 55);
+
+      // 画坐标轴
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(30, H - 35);
+      ctx.lineTo(W - 30, H - 35);
+      ctx.stroke();
+
+      // 数值积分计算最小错误率 P(e) 并绘制重叠误差阴影
+      const steps = 500;
+      const dx = (xMax - xMin) / steps;
+      let totalError = 0;
+
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.35)'; // 琥珀色阴影代表最小错误率面积
+      ctx.beginPath();
+      ctx.moveTo(toX(xMin), toY(0));
+      for (let i = 0; i <= steps; i++) {
+        const x = xMin + i * dx;
+        const y1 = pw1 * gaussian(x, mu1, sig1);
+        const y2 = pw2 * gaussian(x, mu2, sig2);
+        const minY = Math.min(y1, y2);
+        totalError += minY * dx;
+        ctx.lineTo(toX(x), toY(minY));
+      }
+      ctx.lineTo(toX(xMax), toY(0));
+      ctx.closePath();
+      ctx.fill();
+
+      // 绘制类别 1 曲线: P(w1)p(x|w1)
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const x = xMin + i * dx;
+        const y1 = pw1 * gaussian(x, mu1, sig1);
+        if (i === 0) ctx.moveTo(toX(x), toY(y1));
+        else ctx.lineTo(toX(x), toY(y1));
+      }
+      ctx.stroke();
+
+      // 绘制类别 2 曲线: P(w2)p(x|w2)
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const x = xMin + i * dx;
+        const y2 = pw2 * gaussian(x, mu2, sig2);
+        if (i === 0) ctx.moveTo(toX(x), toY(y2));
+        else ctx.lineTo(toX(x), toY(y2));
+      }
+      ctx.stroke();
+
+      // 寻找交点（决策边界 x*）并画竖直虚线
+      for (let i = 1; i <= steps; i++) {
+        const xPrev = xMin + (i - 1) * dx;
+        const xCurr = xMin + i * dx;
+        const diffPrev = pw1 * gaussian(xPrev, mu1, sig1) - pw2 * gaussian(xPrev, mu2, sig2);
+        const diffCurr = pw1 * gaussian(xCurr, mu1, sig1) - pw2 * gaussian(xCurr, mu2, sig2);
+
+        if (diffPrev * diffCurr <= 0 && Math.abs(diffPrev - diffCurr) > 1e-5) {
+          const xCross = (xPrev + xCurr) / 2;
+          const yCross = pw1 * gaussian(xCross, mu1, sig1);
+          if (yCross > 0.003) {
+            const cx = toX(xCross);
+            ctx.strokeStyle = '#10b981';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(cx, 20);
+            ctx.lineTo(cx, H - 35);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#10b981';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(`决策阈值 x*=${xCross.toFixed(2)}`, cx - 40, 16);
+          }
+        }
+      }
+
+      // 图例说明
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillText('🔴 P(ω₁)p(x|ω₁) (固定 μ₁=-1, σ₁=1)', 40, 32);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('🔵 P(ω₂)p(x|ω₂) (可调参数)', 40, 50);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('🟨 阴影面积 = 贝叶斯最小错误率 P(e)', 40, 68);
+
+      document.getElementById('val-pe').innerText = (totalError * 100).toFixed(2) + '%';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      selectChapter('ch2');
+    });
+  </script>
+</body>
+</html>
