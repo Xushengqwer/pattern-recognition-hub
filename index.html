@@ -821,4 +821,226 @@
           }
         }
       }
-      document.getElementById('val-pe').innerText = (totalErr * 100).toFixed
+      document.getElementById('val-pe').innerText = (totalErr * 100).toFixed(2) + '%';
+    }
+
+    // (2) K-NN 实验室
+    let knnPts = [], knnTest = { x: 300, y: 150 };
+    function initKNNData() {
+      knnPts = [];
+      for (let i = 0; i < 30; i++) {
+        knnPts.push({ x: 170 + (Math.random() - 0.5) * 190, y: 150 + (Math.random() - 0.5) * 170, label: 1 });
+        knnPts.push({ x: 410 + (Math.random() - 0.5) * 190, y: 160 + (Math.random() - 0.5) * 170, label: 2 });
+      }
+      const c = document.getElementById('knn-canvas');
+      if (c) {
+        c.onmousemove = e => {
+          const r = c.getBoundingClientRect();
+          knnTest = { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) };
+          drawKNN();
+        };
+      }
+      drawKNN();
+    }
+    function drawKNN() {
+      const c = document.getElementById('knn-canvas');
+      if (!c) return;
+      const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+      const k = parseInt(document.getElementById('knn-k').value);
+      const nb = knnPts.map(p => ({ ...p, d: Math.hypot(p.x - knnTest.x, p.y - knnTest.y) })).sort((a, b) => a.d - b.d).slice(0, k);
+      const maxR = nb.length ? nb[nb.length - 1].d : 0;
+
+      ctx.beginPath(); ctx.arc(knnTest.x, knnTest.y, maxR, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.15)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+
+      let v1 = 0, v2 = 0;
+      nb.forEach(n => {
+        if (n.label === 1) v1++; else v2++;
+        ctx.beginPath(); ctx.moveTo(knnTest.x, knnTest.y); ctx.lineTo(n.x, n.y);
+        ctx.strokeStyle = n.label === 1 ? 'rgba(244,63,94,0.6)' : 'rgba(56,189,248,0.6)'; ctx.lineWidth = 2; ctx.stroke();
+      });
+      knnPts.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = p.label === 1 ? '#f43f5e' : '#38bdf8'; ctx.fill();
+      });
+      const pred = v1 > v2 ? 1 : 2;
+      ctx.beginPath(); ctx.arc(knnTest.x, knnTest.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = pred === 1 ? '#f43f5e' : '#38bdf8'; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+      document.getElementById('knn-vote-1').innerText = v1;
+      document.getElementById('knn-vote-2').innerText = v2;
+      document.getElementById('knn-radius').innerText = Math.round(maxR) + ' px';
+      document.getElementById('knn-result').innerText = pred === 1 ? '🔴 类别 ω₁' : '🔵 类别 ω₂';
+    }
+
+    // (3) 线性分类与 SVM 实验室
+    let linPts = [], linClass = 1;
+    function setLinearAddClass(c) {
+      linClass = c;
+      document.getElementById('btn-add-c1').className = c === 1 ? "py-2 rounded-lg font-bold bg-rose-600 text-white" : "py-2 rounded-lg font-bold bg-slate-700 text-slate-300";
+      document.getElementById('btn-add-c2').className = c === -1 ? "py-2 rounded-lg font-bold bg-sky-600 text-white" : "py-2 rounded-lg font-bold bg-slate-700 text-slate-300";
+    }
+    function initLinearData() {
+      linPts = [
+        {x: 160, y: 90, c: 1}, {x: 210, y: 80, c: 1}, {x: 140, y: 160, c: 1}, {x: 230, y: 130, c: 1}, {x: 180, y: 190, c: 1},
+        {x: 380, y: 140, c: -1}, {x: 430, y: 200, c: -1}, {x: 350, y: 230, c: -1}, {x: 450, y: 130, c: -1}, {x: 410, y: 250, c: -1}
+      ];
+      const c = document.getElementById('linear-canvas');
+      if (c) {
+        c.onclick = e => {
+          const r = c.getBoundingClientRect();
+          linPts.push({ x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height), c: linClass });
+          drawLinearLab();
+        };
+      }
+      drawLinearLab();
+    }
+    function drawLinearLab() {
+      const c = document.getElementById('linear-canvas');
+      if (!c) return;
+      const ctx = c.getContext('2d'), W = c.width, H = c.height;
+      ctx.clearRect(0, 0, W, H);
+      const c1 = linPts.filter(p => p.c === 1), c2 = linPts.filter(p => p.c === -1);
+      if (c1.length && c2.length) {
+        const m1 = { x: c1.reduce((s,p)=>s+p.x,0)/c1.length, y: c1.reduce((s,p)=>s+p.y,0)/c1.length };
+        const m2 = { x: c2.reduce((s,p)=>s+p.x,0)/c2.length, y: c2.reduce((s,p)=>s+p.y,0)/c2.length };
+        let wx = m1.x - m2.x, wy = m1.y - m2.y, norm = Math.hypot(wx, wy) || 1;
+        wx /= norm; wy /= norm;
+        let minP1 = Infinity, sv1 = c1[0], maxP2 = -Infinity, sv2 = c2[0];
+        c1.forEach(p => { const pr = p.x * wx + p.y * wy; if (pr < minP1) { minP1 = pr; sv1 = p; } });
+        c2.forEach(p => { const pr = p.x * wx + p.y * wy; if (pr > maxP2) { maxP2 = pr; sv2 = p; } });
+        const mid = (minP1 + maxP2) / 2;
+        document.getElementById('linear-margin-val').innerText = Math.max(0, minP1 - maxP2).toFixed(1) + ' px';
+
+        const drawL = (val, col, dash) => {
+          ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash(dash ? [5, 5] : []);
+          ctx.beginPath();
+          if (Math.abs(wy) > 0.1) { ctx.moveTo(0, val / wy); ctx.lineTo(W, (val - W * wx) / wy); }
+          else { ctx.moveTo(val / wx, 0); ctx.lineTo(val / wx, H); }
+          ctx.stroke(); ctx.setLineDash([]);
+        };
+        drawL(mid, '#10b981', false); drawL(minP1, 'rgba(255,255,255,0.4)', true); drawL(maxP2, 'rgba(255,255,255,0.4)', true);
+        [sv1, sv2].forEach(sv => { ctx.beginPath(); ctx.arc(sv.x, sv.y, 11, 0, Math.PI * 2); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2.5; ctx.stroke(); });
+      }
+      linPts.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2); ctx.fillStyle = p.c === 1 ? '#f43f5e' : '#38bdf8'; ctx.fill(); });
+    }
+
+    // (4) PCA 降维投影实验室
+    let pcaPts = [];
+    function generatePCAData() {
+      const deg = parseFloat(document.getElementById('pca-angle')?.value || 35);
+      const sp = parseFloat(document.getElementById('pca-spread')?.value || 25);
+      const rad = (deg * Math.PI) / 180, cosA = Math.cos(rad), sinA = Math.sin(rad);
+      pcaPts = [];
+      for (let i = 0; i < 42; i++) {
+        const u = (Math.random() - 0.5) * 250, v = (Math.random() - 0.5) * sp * 2.4;
+        pcaPts.push({ x: 300 + u * cosA - v * sinA, y: 150 + u * sinA + v * cosA });
+      }
+      drawPCALab();
+    }
+    function drawPCALab() {
+      const c = document.getElementById('pca-canvas');
+      if (!c || !pcaPts.length) return;
+      const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+      const mx = pcaPts.reduce((s,p)=>s+p.x,0)/pcaPts.length, my = pcaPts.reduce((s,p)=>s+p.y,0)/pcaPts.length;
+      let sxx = 0, syy = 0, sxy = 0;
+      pcaPts.forEach(p => { sxx += (p.x - mx) ** 2; syy += (p.y - my) ** 2; sxy += (p.x - mx) * (p.y - my); });
+      const tr = sxx + syy, det = sxx * syy - sxy * sxy, disc = Math.sqrt(Math.max(0, (tr / 2) ** 2 - det));
+      const l1 = tr / 2 + disc, l2 = Math.max(0, tr / 2 - disc);
+      let ux = sxy, uy = l1 - sxx, un = Math.hypot(ux, uy) || 1;
+      ux /= un; uy /= un;
+
+      document.getElementById('pca-v1').innerText = ((l1 / (l1 + l2)) * 100).toFixed(1) + '%';
+      document.getElementById('pca-v2').innerText = ((l2 / (l1 + l2)) * 100).toFixed(1) + '%';
+
+      // 画各点到第一主成分轴的正交投影线
+      pcaPts.forEach(p => {
+        const proj = (p.x - mx) * ux + (p.y - my) * uy;
+        const px = mx + proj * ux, py = my + proj * uy;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(px, py); ctx.stroke();
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2); ctx.fillStyle = '#38bdf8'; ctx.fill();
+      });
+
+      // 画第一主成分轴 (绿) 与第二主成分轴 (紫)
+      ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(mx - ux * 220, my - uy * 220); ctx.lineTo(mx + ux * 220, my + uy * 220); ctx.stroke();
+      ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(mx + uy * 90, my - ux * 90); ctx.lineTo(mx - uy * 90, my + ux * 90); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // (5) K-Means 动态聚类实验室
+    const kmCols = ['#f43f5e', '#38bdf8', '#10b981', '#f59e0b', '#a855f7'];
+    let kmPts = [], kmCents = [], kmIter = 0;
+    function randomKMeansData() {
+      kmPts = [];
+      [{x: 150, y: 100}, {x: 430, y: 110}, {x: 290, y: 220}].forEach(c => {
+        for (let i = 0; i < 22; i++) kmPts.push({ x: c.x + (Math.random() - 0.5) * 120, y: c.y + (Math.random() - 0.5) * 100, cluster: -1 });
+      });
+      const canvas = document.getElementById('kmeans-canvas');
+      if (canvas) {
+        canvas.onclick = e => {
+          const r = canvas.getBoundingClientRect();
+          kmPts.push({ x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height), cluster: -1 });
+          drawKMeans();
+        };
+      }
+      initKMeansCentroids();
+    }
+    function initKMeansCentroids() {
+      const k = parseInt(document.getElementById('kmeans-k')?.value || 3);
+      kmCents = [];
+      for (let i = 0; i < k; i++) kmCents.push({ x: 90 + Math.random() * 420, y: 50 + Math.random() * 200 });
+      kmPts.forEach(p => p.cluster = -1);
+      kmIter = 0;
+      document.getElementById('kmeans-iter').innerText = 0;
+      document.getElementById('kmeans-sse').innerText = '0';
+      document.getElementById('kmeans-status').innerText = '旗子已插好，请点单步迭代';
+      drawKMeans();
+    }
+    function stepKMeans() {
+      if (!kmPts.length) return;
+      let changed = false, sse = 0;
+      kmPts.forEach(p => {
+        let minD = Infinity, best = 0;
+        kmCents.forEach((c, i) => { const d = (p.x - c.x) ** 2 + (p.y - c.y) ** 2; if (d < minD) { minD = d; best = i; } });
+        if (p.cluster !== best) changed = true;
+        p.cluster = best; sse += minD;
+      });
+      kmCents.forEach((c, i) => {
+        const sub = kmPts.filter(p => p.cluster === i);
+        if (sub.length) { c.x = sub.reduce((s,p)=>s+p.x,0)/sub.length; c.y = sub.reduce((s,p)=>s+p.y,0)/sub.length; }
+      });
+      kmIter++;
+      document.getElementById('kmeans-iter').innerText = kmIter;
+      document.getElementById('kmeans-sse').innerText = (sse / 1000).toFixed(1) + 'k';
+      document.getElementById('kmeans-status').innerText = changed ? '人群跑动集合中...' : '🎉 已收敛稳定！';
+      drawKMeans();
+    }
+    function drawKMeans() {
+      const c = document.getElementById('kmeans-canvas');
+      if (!c) return;
+      const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+      kmPts.forEach(p => {
+        if (p.cluster !== -1 && kmCents[p.cluster]) {
+          ctx.strokeStyle = kmCols[p.cluster] + '33'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(kmCents[p.cluster].x, kmCents[p.cluster].y); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = p.cluster === -1 ? '#94a3b8' : kmCols[p.cluster]; ctx.fill();
+      });
+      kmCents.forEach((c, i) => {
+        ctx.beginPath(); ctx.arc(c.x, c.y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = kmCols[i]; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+      });
+    }
+
+    // 页面初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTheme();
+      updateProgress();
+      selectChapter('ch1');
+    });
+  </script>
+</body>
+</html>
